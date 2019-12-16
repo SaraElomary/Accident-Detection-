@@ -1,0 +1,60 @@
+# Initialising the CNN
+classifier = Sequential()
+
+# Step 1 - Convolution
+classifier.add(Conv2D(32, (3, 3), input_shape=(256, 256, 1), activation = 'relu'))
+classifier.add(BatchNormalization())
+
+# Step 2 - Pooling
+classifier.add(MaxPooling2D(pool_size = (2, 2)))
+
+classifier.add(Dropout(0.2))
+
+# Adding a second convolutional layer
+classifier.add(Conv2D(32, (3, 3), activation = 'relu'))
+classifier.add(BatchNormalization())
+classifier.add(MaxPooling2D(pool_size = (2, 2)))
+classifier.add(Dropout(0.2))
+
+
+# Adding a tree convolutional layer
+classifier.add(Conv2D(32, (3, 3), activation = 'relu'))
+classifier.add(BatchNormalization())
+classifier.add(MaxPooling2D(pool_size = (2, 2)))
+classifier.add(Dropout(0.2))
+
+# Step 3 - Flattening
+classifier.add(Flatten())
+
+# Step 4 - Full connection
+classifier.add(Dense(units = 128, activation = 'relu'))
+classifier.add(Dense(units = 128, activation = 'relu'))
+classifier.add(Dense(units = 2, activation = 'sigmoid'))
+
+# Define the optimizer
+optimizer = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-7)
+# Compile the model
+classifier.compile(loss=categorical_crossentropy, 
+              optimizer = optimizer,
+              metrics=['accuracy'])
+# Set a learning rate annealer
+early_stopper = EarlyStopping(monitor='val_acc', min_delta=0, patience=8, verbose=1, mode='auto')
+checkpointer = ModelCheckpoint('/content/gdrive/My Drive/model2.h3', monitor='val_acc', verbose=1, save_best_only=True)
+
+# Compiling the CNN
+classifier.compile(optimizer = optimizer, loss = 'binary_crossentropy', metrics = ['accuracy'])
+
+# Part 2 - Fitting the CNN to the images
+
+from keras.preprocessing.image import ImageDataGenerator
+
+test_datagen = ImageDataGenerator(rescale = 1./255)
+
+classifier.fit(x_train, y_train, batch_size=50,
+          validation_data = (x_test, y_test),
+          epochs=400,
+          verbose=1,
+          callbacks=[early_stopper, checkpointer]
+              )
+
+classifier.save("model.h3")
